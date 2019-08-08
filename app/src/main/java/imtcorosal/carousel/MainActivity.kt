@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearSnapHelper
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -12,7 +14,8 @@ class MainActivity : AppCompatActivity() {
         ItemAdapter { position: Int, item: Item ->
             Toast.makeText(this@MainActivity, "Pos ${position}", Toast.LENGTH_LONG).show()
             item_list.smoothScrollToPosition(position)
-        } }
+        }
+    }
     private val possibleItems = listOf(
         Item("Airplanes", R.drawable.ic_airplane),
         Item("Cars", R.drawable.ic_car),
@@ -27,7 +30,45 @@ class MainActivity : AppCompatActivity() {
 
         item_list.initialize(itemAdapter)
         item_list.setViewsToChangeColor(listOf(R.id.list_item_background, R.id.list_item_text))
+        setSnapToRecyclerView()
+
         itemAdapter.setItems(getLargeListOfItems())
+    }
+
+    private fun setSnapToRecyclerView() {
+        val snapHelper = object : LinearSnapHelper() {
+            override fun findTargetSnapPosition(
+                layoutManager: RecyclerView.LayoutManager?,
+                velocityX: Int,
+                velocityY: Int
+            ): Int {
+                val centerView = findSnapView(layoutManager!!) ?: return RecyclerView.NO_POSITION
+
+                val position = layoutManager.getPosition(centerView)
+                var targetPosition = -1
+                if (layoutManager.canScrollHorizontally()) {
+                    if (velocityX < 0) {
+                        targetPosition = position - 1
+                    } else {
+                        targetPosition = position + 1
+                    }
+                }
+
+                if (layoutManager.canScrollVertically()) {
+                    if (velocityY < 0) {
+                        targetPosition = position - 1
+                    } else {
+                        targetPosition = position + 1
+                    }
+                }
+
+                val firstItem = 0
+                val lastItem = layoutManager.itemCount - 1
+                targetPosition = Math.min(lastItem, Math.max(targetPosition, firstItem))
+                return targetPosition
+            }
+        }
+        snapHelper.attachToRecyclerView(item_list)
     }
 
     private fun getLargeListOfItems(): List<Item> {
